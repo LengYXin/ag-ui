@@ -559,7 +559,8 @@ export class LangGraphAgent extends AbstractAgent {
           (hasStateDiff ||
             this.activeRun!.prevNodeName != this.activeRun!.nodeName ||
             this.activeRun!.exitingNode) &&
-          !Boolean(this.getMessageInProgress(this.activeRun!.id))
+          !Boolean(this.getMessageInProgress(this.activeRun!.id)) &&
+          !(this.activeRun!.exitingNode && this.activeRun!.hasPredictState)
         ) {
           state = updatedState;
           this.activeRun!.prevNodeName = this.activeRun!.nodeName;
@@ -699,6 +700,7 @@ export class LangGraphAgent extends AbstractAgent {
         }
 
         if (toolCallUsedToPredictState) {
+          this.activeRun!.hasPredictState = true;
           this.dispatchEvent({
             type: EventType.CUSTOM,
             name: "PredictState",
@@ -874,6 +876,7 @@ export class LangGraphAgent extends AbstractAgent {
         });
         break;
       case LangGraphEventTypes.OnToolEnd:
+        this.activeRun!.hasPredictState = false;
         let toolCallOutput = event.data?.output
 
         // Command from within a tool. We need to grab result from the tool result message
