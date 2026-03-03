@@ -55,7 +55,10 @@ export const defaultApplyEvents = (
   agent: AbstractAgent,
   subscribers: AgentSubscriber[],
 ): Observable<AgentStateMutation> => {
-  let messages = structuredClone_(agent.messages ?? input.messages ?? []);
+  // TODO: the below line fixes the big tested in sdks/typescript/packages/client/src/middleware/__tests__/middleware-chained-run-next-with-state.test.ts
+  // Uncomment the below line, and remove the one underneath it, to use the fix
+  // let messages = structuredClone_(agent.messages ?? input.messages ?? []);
+  let messages = structuredClone_(agent.messages);
   let state = structuredClone_(input.state);
   let currentMutation: AgentStateMutation = {};
 
