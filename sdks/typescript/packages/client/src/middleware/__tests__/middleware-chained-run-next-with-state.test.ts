@@ -86,10 +86,12 @@ describe("Middleware chained runNextWithState", () => {
     const outerMiddleware = new CapturingMiddleware();
 
     // Mirror the reduceRight chain builder in agent.ts:133-139.
-    // The outer middleware's "next" is a plain wrapper object with no .messages
-    // property — exactly what reduceRight produces for the outermost middleware.
+    // Each wrapper delegates .messages and .state back through the chain via getters,
+    // so every layer transparently resolves to the real agent's state.
     const outerWrapper = {
       run: (i: RunAgentInput) => innerMiddleware.run(i, realAgent),
+      get messages() { return realAgent.messages; },
+      get state() { return realAgent.state; },
     } as AbstractAgent;
 
     const events: BaseEvent[] = [];
@@ -105,13 +107,9 @@ describe("Middleware chained runNextWithState", () => {
     expect(innerMiddleware.captured).toHaveLength(1);
     expect(innerMiddleware.captured[0]).toMatchObject({ role: "assistant", content: "Hello" });
 
-    // outer middleware: next is a plain wrapper (no .messages) → broken before fix
-    // Before fix (default.ts:58 = `structuredClone_(agent.messages)`):
-    //   agent.messages is undefined → messages is undefined → messages.find() throws →
-    //   defaultApplyEvents errors → currentMessages never updated → captured stays []
-    // After fix (default.ts:58 = `structuredClone_(agent.messages ?? input.messages ?? [])`):
-    //   agent.messages is undefined → falls back to input.messages ([]) →
-    //   messages tracked correctly → captured reflects the text message
+    // outer middleware: next was a plain wrapper (no .messages) → broken before fix
+    // Fix: chain builder wrappers now delegate .messages and .state via getters,
+    // so every wrapper transparently resolves to the real agent's state.
     expect(outerMiddleware.captured).toHaveLength(1);
     expect(outerMiddleware.captured[0]).toMatchObject({ role: "assistant", content: "Hello" });
   });
