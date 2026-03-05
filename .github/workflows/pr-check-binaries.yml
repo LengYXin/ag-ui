@@ -57,6 +57,10 @@ jobs:
           # Check for large files (>1MB) among changed files
           LARGE_FILES=""
           while IFS= read -r file; do
+            # Skip lock files - these are legitimate and often large
+            case "$file" in
+              *lock.yaml|*lock.json|*.lock) continue ;;
+            esac
             if [ -f "$file" ]; then
               SIZE=$(wc -c < "$file" | tr -d ' ')
               if [ "$SIZE" -gt 1048576 ]; then
